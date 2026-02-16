@@ -7,43 +7,42 @@ source "$SCRIPT_DIR/.env"
 source "$SCRIPT_DIR/utilities.sh"
 
 # Use environment variables
+DEVICE_NAME="$WOL_DEVICE_NAME"
 DEVICE_IP="$WOL_IP"
-WOL_PERMISSION_ENTITY="$WOL_ACTIVATION_PERMISSION_ENTITY"
-WOL_SHUTDOWN_ENTITY="$WOL_AUTO_OFF_ENTITY"
 LOG_FILE="$WOL_LOG_FILE"
 
 # Main script logic
 case "$1" in
     job-start)
-        log "Backup job starting with smart hook attached"
+        log "INFO: Backup job starting with smart hook attached"
         send_pushover "Backup started"
         
         # Check if PBS is online
         if check_device_online 1; then
-            log "PBS is online, proceeding with backup"
+            log "INFO: $DEVICE_NAME is online, proceeding with backup"
             exit 0
         else
-            log "ERROR: PBS is offline!"
-            send_pushover "Backup Aborting: PBS is offline! Configure crontab to wake PBS in advance of backup schedule"
+            log "WARNING: $DEVICE_NAME is offline!"
+            send_pushover "WARNING: $DEVICE_NAME is offline! Configure crontab to wake PBS in advance of backup schedule"
             exit 1
         fi
         ;;
         
     job-end)
-        log "Backup job completed successfully initialating shutdown sequence"
-        send_pushover "Backup completed successfully on IP: $DEVICE_IP at $(date '+%Y-%m-%d %H:%M:%S')"
+        log "INFO: Backup job completed successfully on $DEVICE_NAME initialating shutdown sequence"
+        send_pushover "Backup completed successfully to $DEVICE_NAME at $(date '+%Y-%m-%d %H:%M:%S')"
         
         # Wait 2 minutes before shutdown
-        log "Waiting 2 minutes before initiating shutdown..."
+        log "CRITICAL: Waiting 2 minutes before initiating shutdown"
         sleep 120
         
         shutdown_system
         ;;
         
     job-abort)
-        log "=== Backup job aborted or failed ==="
-        send_pushover "BACKUP ABORTED:job aborted or failed"
-        log "Waiting 5 minutes before attempting shutdown..."
+        log "WARNING: Backup Failed to $DEVICE_NAME"
+        send_pushover "WARNING: Backup Failed to $DEVICE_NAME"
+        log "CRITICAL: Waiting 5 minutes before attempting shutdown"
         sleep 300
         
         shutdown_system

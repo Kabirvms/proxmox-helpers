@@ -1,15 +1,14 @@
 #!/bin/bash
-# PBS backup hook script
+#This needs to be attached to the backup as a hook script
 
-#imports dependenices
+#Imports dependenices
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/.env"
 source "$SCRIPT_DIR/utilities.sh"
 
 # Pulls in from .env
+DEVICE_NAME="$SW_DEVICE_NAME"
 DEVICE_IP="$SWITCH_IP"
-SWITCH_PERMISSION_ENTITY="$SWITCH_ACTIVATION_PERMISSION_ENTITY"
-SWITCH_SHUTDOWN_ENTITY="$SWITCH_AUTO_OFF_ENTITY"
 LOG_FILE="$SWITCH_LOG_FILE"
 
 case "$1" in

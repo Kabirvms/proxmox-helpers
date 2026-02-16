@@ -1,11 +1,12 @@
 #!/bin/bash
 # BACKUP Script Utilities
-# ENV Required: HA_URL, HA_TOKEN, PUSHOVER_TOKEN, PUSHOVER_USER, LOG_FILE, DEVICE_IP
 
+# Sets up a simple log file
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
+#Sends the pushover notifications see the webiste for config options
 send_pushover() {
     curl -s \
         --form-string "token=$PUSHOVER_TOKEN" \
@@ -15,8 +16,7 @@ send_pushover() {
 }
 
 check_ha_permission() {
-    local entity_id=${1:-$WOL_ACTIVATION_PERMISSION_ENTITY}  # Default to WOL permission if not specified
-    
+    local entity_id=${1}
     local response
     response=$(curl -s -X GET \
         -H "Authorization: Bearer $HA_TOKEN" \
@@ -27,19 +27,20 @@ check_ha_permission() {
     state=$(echo "$response" | jq -r '.state' 2>/dev/null)
     
     if [ "$state" = "on" ]; then
-        log "Home Assistant: Permission granted for $entity_id"
+        log "Home Assistant: Permission granted for $DEVICE_NAME"
         return 0
     else
-        log "Home Assistant: Permission denied for $entity_id (state: $state)"
-        send_pushover "Backup Aborted: HA permission not granted for $entity_id"
+        #IF the entity is not on or the api call fails the following message is sent
+        log "Home Assistant: Permission denied for $DEVICE_NAME (state: $state)"
+        send_pushover "WARNING: HA permission not granted for $entity_id"
         return 1
     fi
 }
 
+#This is used to turn on or of a ha entitiy such as a swtich.
 set_ha_entity() {
     local entity_id=$1
     local new_state=$2
-    
     local response
     response=$(curl -s -X POST \
         -H "Authorization: Bearer $HA_TOKEN" \
@@ -53,7 +54,7 @@ set_ha_entity() {
         log "Successfully set $entity_id to $new_state"
     else
         log "Failed to set $entity_id to $new_state"
-        send_pushover "Backup Aborted: Failed to set $entity_id to $new_state"
+        send_pushover "WARNING: Failed to set $entity_id for $DEVICE_NAME"
     fi
 }
 
@@ -84,30 +85,31 @@ check_device_online() {
 
 shutdown_system() {
     local target_ip=${1:-$DEVICE_IP}
-    local ssh_user=${SSH_USER:-root}  # Default to root if not set
+    local ssh_user=${SSH_USER:-root}
     
     log "Checking Home Assistant permission for shutdown..."
     if ! check_ha_permission "$WOL_SHUTDOWN_ENTITY"; then
         log "Shutdown blocked by Home Assistant toggle"
-        send_pushover "Auto Shutdown is disabled and machine will stay up"
+        send_pushover "INFO: Auto Shutdown is disabled and $DEVICE_NAME will stay up"
         return 1
     fi
     
     log "Initiating remote shutdown via SSH to $ssh_user@$target_ip..."
     if ssh "$ssh_user@$target_ip" "sudo /sbin/shutdown -h now" 2>&1 | tee -a "$LOG_FILE"; then
         log "PBS shutdown command sent successfully"
-        sleep 30  # Wait for shutdown to begin
+        # Wait 2 mins for shutdown to happen before checking
+        sleep 120 
         if check_device_online "$target_ip" 6; then
             log "ERROR: PBS is still online after shutdown command"
-            send_pushover "WARNING SYSTEM FAILURE: PBS is still online after shutdown command"
+            send_pushover "WARNING: $DEVICE_NAME is still online after shutdown command"
             return 1
         else
-            log "PBS has shut down successfully"
+            log "$DEVICE_NAME has shutdown successfully"
             return 0
         fi
     else
-        log "ERROR: Failed to send shutdown command to PBS"
-        send_pushover "ERROR: Failed to send ssh shutdown command to PBS"
+        log "Failed to send shutdown command to $DEVICE_NAME"
+        send_pushover "WARNING: Failed to send ssh shutdown command to $DEVICE_NAME. Aborting next steps."
         return 1
     fi
 }
