@@ -13,51 +13,48 @@ LOG_FILE="$SWITCH_LOG_FILE"
 
 case "$1" in
     job-start)
-        log "Backup job starting with smart hook attached"
-        send_pushover "Backup started"
-        
+        log "INFO: Backup job starting with smart hook attached"        
         if check_device_online 1; then
             log "PBS is online, proceeding with backup"
             exit 0
         else
-            log "ERROR: PBS is offline!"
-            send_pushover "Backup Aborting: PBS is offline! Configure crontab to wake PBS in advance of backup schedule"
+            log "WARNING: $DEVICE_NAME is offline!"
+            send_pushover "WARNING: $DEVICE_NAME is offline! Configure crontab to wake $DEVICE_NAME in advance of backup schedule"
             exit 1
         fi
         ;;
         
     job-end)
-        log "Backup job completed successfully initialating shutdown sequence"
-        send_pushover "Backup completed successfully on IP: $DEVICE_IP at $(date '+%Y-%m-%d %H:%M:%S')"
+        log "INFO: Backup job completed successfully initialating shutdown sequence"
+        send_pushover "INFO: Backup completed successfully on IP: $DEVICE_IP at $(date '+%Y-%m-%d %H:%M:%S')"
         
-        log "Waiting 2 minutes before initiating shutdown..."
+        log "INFO: Waiting 2 minutes before initiating shutdown..."
         sleep 120
         
         if ! shutdown_system; then
-            log "Shutdown failed or was blocked"
-            send_pushover "Shutdown failed or was blocked after backup completion"
+            log "WARNING: Shutdown failed or was blocked"
+            send_pushover "WARNING: Shutdown failed or was blocked after backup completion"
         else
-            log "Shutdown initiated successfully"
+            log "INFO: Shutdown initiated successfully"
             sleep 300
             set_ha_entity "$SWITCH_ENTITY" "off"
-            send_pushover "Shutdown initiated successfully after backup completion"
         fi
         ;;
         
     job-abort)
-        log "=== Backup job aborted or failed ==="
-        send_pushover "BACKUP ABORTED: job aborted or failed"
-        log "Waiting 5 minutes before attempting shutdown..."
+        log "ERROR: Backup job aborted or failed and initiating shutdown"
+        send_pushover "ERROR: Backup job aborted or failed. Continuing to shutdown"
+        log "CRITICAL: Waiting 5 minutes before attempting shutdown"
         sleep 300
         
         if ! shutdown_system; then
-            log "Shutdown failed or was blocked"
-            send_pushover "Shutdown failed or was blocked after backup abort"
+            log "WARNING: Shutdown failed or was blocked"
+            send_pushover "WARNING: Shutdown failed or was blocked after backup abort"
         else
-            log "Shutdown initiated successfully after abort"
+            log "INFO: Shutdown initiated successfully after abort"
             sleep 300
             set_ha_entity "$SWITCH_ENTITY" "off"
-            send_pushover "Shutdown initiated successfully after backup abort"
+            send_pushover "INFO: Shutdown initiated successfully after backup abort"
         fi
         ;;
         

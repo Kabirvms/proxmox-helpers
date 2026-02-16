@@ -14,9 +14,7 @@ LOG_FILE="$WOL_LOG_FILE"
 # Main script logic
 case "$1" in
     job-start)
-        log "INFO: Backup job starting with smart hook attached"
-        send_pushover "Backup started"
-        
+        log "INFO: Backup job starting with smart hook attached"        
         # Check if PBS is online
         if check_device_online 1; then
             log "INFO: $DEVICE_NAME is online, proceeding with backup"
@@ -30,7 +28,7 @@ case "$1" in
         
     job-end)
         log "INFO: Backup job completed successfully on $DEVICE_NAME initialating shutdown sequence"
-        send_pushover "Backup completed successfully to $DEVICE_NAME at $(date '+%Y-%m-%d %H:%M:%S')"
+        send_pushover "INFO: Backup completed successfully to $DEVICE_NAME at $(date '+%Y-%m-%d %H:%M:%S')"
         
         # Wait 2 minutes before shutdown
         log "CRITICAL: Waiting 2 minutes before initiating shutdown"
@@ -40,8 +38,8 @@ case "$1" in
         ;;
         
     job-abort)
-        log "WARNING: Backup Failed to $DEVICE_NAME"
-        send_pushover "WARNING: Backup Failed to $DEVICE_NAME"
+        log "ERROR: Backup Failed to $DEVICE_NAME"
+        send_pushover "ERROR: Backup Failed to $DEVICE_NAME"
         log "CRITICAL: Waiting 5 minutes before attempting shutdown"
         sleep 300
         

@@ -27,13 +27,17 @@ check_ha_permission() {
     state=$(echo "$response" | jq -r '.state' 2>/dev/null)
     
     if [ "$state" = "on" ]; then
-        log "Home Assistant: Permission granted for $DEVICE_NAME"
+        log "INFO: Home Assistant: Permission granted for $DEVICE_NAME"
         return 0
-    else
-        #IF the entity is not on or the api call fails the following message is sent
-        log "Home Assistant: Permission denied for $DEVICE_NAME (state: $state)"
-        send_pushover "WARNING: HA permission not granted for $entity_id"
+    elif [ "$state" = "off" ]; then
+        log "WARNING: Home Assistant: Denied the Request for $DEVICE_NAME"
+        send_pushover "WARNING: Home Assistant: Denied the Request for $DEVICE_NAME"
         return 1
+    else
+        #If the api call fails the following message is sent
+        log "ERROR: Home Assistant: API Call error failed to check permissions in Home Assistant"
+        send_pushover "ERROR: Home Assistant: API Call error failed to check permissions in Home Assistant: $entity_id"
+        return 2
     fi
 }
 
@@ -51,10 +55,10 @@ set_ha_entity() {
     local state
     state=$(echo "$response" | jq -r '.state' 2>/dev/null)
     if [ "$state" = "$new_state" ]; then
-        log "Successfully set $entity_id to $new_state"
+        log "INFO: Successfully set $entity_id to $new_state"
     else
-        log "Failed to set $entity_id to $new_state"
-        send_pushover "WARNING: Failed to set $entity_id for $DEVICE_NAME"
+        log "ERROR: Failed to set $entity_id to $new_state"
+        send_pushover "ERROR: Failed to set $entity_id for $DEVICE_NAME"
     fi
 }
 
@@ -64,21 +68,21 @@ check_device_online() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        log "Checking if device $device_ip is online (attempt $attempt/$max_attempts)..."
+        log "INFO: Checking if device $DEVICE_NAME is online (attempt $attempt/$max_attempts)..."
         if ping -c 1 -W 1 "$device_ip" > /dev/null 2>&1; then
-            log "Device $device_ip is online"
+            log "INFO: Device $DEVICE_NAME is online"
             return 0  # Online
         fi
         
         if [ $attempt -lt $max_attempts ]; then
-            log "Device $device_ip not responding, waiting 10 seconds before retry..."
+            log "INFO: Device $DEVICE_NAME not responding, waiting 10 seconds before retry..."
             sleep 10
         fi
         
         attempt=$((attempt + 1))
     done
     
-    log "Device $device_ip is offline after $max_attempts attempts"
+    log "INFO: Device $DEVICE_NAME is offline after $max_attempts attempts"
     return 1  # Offline
 }
 
@@ -87,29 +91,29 @@ shutdown_system() {
     local target_ip=${1:-$DEVICE_IP}
     local ssh_user=${SSH_USER:-root}
     
-    log "Checking Home Assistant permission for shutdown..."
+    log "INFO: Checking Home Assistant permission for shutdown"
     if ! check_ha_permission "$WOL_SHUTDOWN_ENTITY"; then
-        log "Shutdown blocked by Home Assistant toggle"
-        send_pushover "INFO: Auto Shutdown is disabled and $DEVICE_NAME will stay up"
+        log "WARNING: Shutdown blocked by Home Assistant toggle"
+        send_pushover "WARNING: Auto Shutdown is disabled and $DEVICE_NAME will stay up"
         return 1
     fi
     
-    log "Initiating remote shutdown via SSH to $ssh_user@$target_ip..."
+    log "INFO: Initiating remote shutdown via SSH to $ssh_user@$target_ip"
     if ssh "$ssh_user@$target_ip" "sudo /sbin/shutdown -h now" 2>&1 | tee -a "$LOG_FILE"; then
-        log "PBS shutdown command sent successfully"
+        log "INFO: Shutdown command sent successfully to $DEVICE_NAME"
         # Wait 2 mins for shutdown to happen before checking
         sleep 120 
         if check_device_online "$target_ip" 6; then
-            log "ERROR: PBS is still online after shutdown command"
-            send_pushover "WARNING: $DEVICE_NAME is still online after shutdown command"
+            log "ERROR: $DEVICE_NAME is still online after shutdown command"
+            send_pushover "ERROR: $DEVICE_NAME is still online after shutdown command"
             return 1
         else
-            log "$DEVICE_NAME has shutdown successfully"
+            log "INFO: $DEVICE_NAME has shutdown successfully"
             return 0
         fi
     else
-        log "Failed to send shutdown command to $DEVICE_NAME"
-        send_pushover "WARNING: Failed to send ssh shutdown command to $DEVICE_NAME. Aborting next steps."
+        log "ERROR: Failed to send shutdown command to $DEVICE_NAME"
+        send_pushover "ERROR: Failed to send ssh shutdown command to $DEVICE_NAME. Aborting next steps."
         return 1
     fi
 }
