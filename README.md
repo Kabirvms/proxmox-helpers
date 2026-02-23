@@ -12,3 +12,7 @@ The shutdown scripts should be connected to the proxmox backup as "hook" scripts
 ``pvesh set /cluster/backup/backup-code --script script-name.sh``
 You will also have to enable shutdown with no password
 and set up key based ssh access from the machine running proxmox to the backup server
+
+## Road Map
+- Improve notification flow in backups
+- Add notification only sripts
