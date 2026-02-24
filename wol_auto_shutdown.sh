@@ -10,6 +10,8 @@ source "$SCRIPT_DIR/utilities.sh"
 DEVICE_NAME="$WOL_DEVICE_NAME"
 DEVICE_IP="$WOL_IP"
 LOG_FILE="$WOL_LOG_FILE"
+AUTO_OFF_ENTITY="$WOL_AUTO_OFF_ENTITY"
+SSH_USER="$WOL_USER"
 
 # Main script logic
 case "$1" in

@@ -92,7 +92,7 @@ shutdown_system() {
     local ssh_user=${SSH_USER:-root}
     
     log "INFO: Checking Home Assistant permission for shutdown"
-    if ! check_ha_permission "$WOL_SHUTDOWN_ENTITY"; then
+    if ! check_ha_permission "$AUTO_OFF_ENTITY"; then
         log "WARNING: Shutdown blocked by Home Assistant toggle"
         send_pushover "WARNING: Auto Shutdown is disabled and $DEVICE_NAME will stay up"
         return 1

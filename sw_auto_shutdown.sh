@@ -8,8 +8,10 @@ source "$SCRIPT_DIR/utilities.sh"
 
 # Pulls in from .env
 DEVICE_NAME="$SW_DEVICE_NAME"
-DEVICE_IP="$SWITCH_IP"
-LOG_FILE="$SWITCH_LOG_FILE"
+DEVICE_IP="$SW_IP"
+LOG_FILE="$SW_LOG_FILE"
+AUTO_OFF_ENTITY="$SW_AUTO_OFF_ENTITY"
+SSH_USER="$SW_USER"
 
 case "$1" in
     job-start)
@@ -26,7 +28,7 @@ case "$1" in
         
     job-end)
         log "INFO: Backup job completed successfully initialating shutdown sequence"
-        send_pushover "INFO: Backup completed successfully on IP: $DEVICE_IP at $(date '+%Y-%m-%d %H:%M:%S')"
+        send_pushover "INFO: Backup completed successfully on IP: $DEVICE_NAME at $(date '+%Y-%m-%d %H:%M:%S')"
         
         log "INFO: Waiting 2 minutes before initiating shutdown..."
         sleep 120
@@ -37,7 +39,7 @@ case "$1" in
         else
             log "INFO: Shutdown initiated successfully"
             sleep 300
-            set_ha_entity "$SWITCH_ENTITY" "off"
+            set_ha_entity "$SW_ENTITY" "off"
         fi
         ;;
         
@@ -53,7 +55,7 @@ case "$1" in
         else
             log "INFO: Shutdown initiated successfully after abort"
             sleep 300
-            set_ha_entity "$SWITCH_ENTITY" "off"
+            set_ha_entity "$SW_ENTITY" "off"
             send_pushover "INFO: Shutdown initiated successfully after backup abort"
         fi
         ;;

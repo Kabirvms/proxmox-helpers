@@ -8,13 +8,13 @@ source "$SCRIPT_DIR/utilities.sh"
 
 # Use environment variables
 DEVICE_NAME="$SW_DEVICE_NAME"
-DEVICE_IP="$SWIP"
-LOG_FILE="$SWITCH_LOG_FILE"
+DEVICE_IP="$SW_IP"
+LOG_FILE="$SW_LOG_FILE"
 
 
 # Check Home Assistant permission before proceeding
-log "INFO: Checking Home Assistant permission for $SWITCH_PERMISSION_ENTITY"
-if ! check_ha_permission "$SWITCH_PERMISSION_ENTITY"; then
+log "INFO: Checking Home Assistant permission for $SW_ACTIVATION_PERMISSION_ENTITY"
+if ! check_ha_permission "$SW_ACTIVATION_PERMISSION_ENTITY"; then
     log "WARNING: HA permission not granted. The server will not backup to $DEVICE_NAME"
     send_pushover "WARNING: HA permission not granted. The server will not backup to $DEVICE_NAME"
     exit 1

@@ -15,7 +15,7 @@ LOG_FILE="$WOL_LOG_FILE"
 
 # Check Home Assistant permission before proceeding
 log "INFO: Checking Home Assistant permission for WOL activation on $DEVICE_NAME"
-if ! check_ha_permission "$WOL_ENTITY"; then
+if ! check_ha_permission "$WOL_ACTIVATION_PERMISSION_ENTITY"; then
     log "WARNING: WOL activation blocked by Home Assistant toggle. $DEVICE_NAME is not ready"
     send_pushover "WARNING: HA permission not granted for $DEVICE_NAME"
     exit 1
