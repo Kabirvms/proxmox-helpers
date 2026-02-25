@@ -90,6 +90,7 @@ check_device_online() {
 shutdown_system() {
     local target_ip=${1:-$DEVICE_IP}
     local ssh_user=${SSH_USER:-root}
+
     
     log "INFO: Checking Home Assistant permission for shutdown"
     if ! check_ha_permission "$AUTO_OFF_ENTITY"; then
@@ -99,21 +100,31 @@ shutdown_system() {
     fi
     
     log "INFO: Initiating remote shutdown via SSH to $ssh_user@$target_ip"
-    if ssh "$ssh_user@$target_ip" "sudo /sbin/shutdown -h now" 2>&1 | tee -a "$LOG_FILE"; then
-        log "INFO: Shutdown command sent successfully to $DEVICE_NAME"
-        # Wait 2 mins for shutdown to happen before checking
-        sleep 120 
-        if check_device_online "$target_ip" 6; then
-            log "ERROR: $DEVICE_NAME is still online after shutdown command"
-            send_pushover "ERROR: $DEVICE_NAME is still online after shutdown command"
-            return 1
+    if [ "$ssh_user" == "root" ]; then
+        if ssh "$ssh_user@$target_ip" "/sbin/shutdown -h now" 2>&1 | tee -a "$LOG_FILE"; then
+            log "INFO: Shutdown command sent successfully to $DEVICE_NAME"
         else
-            log "INFO: $DEVICE_NAME has shutdown successfully"
-            return 0
+            log "ERROR: Failed to send shutdown command to $DEVICE_NAME"
+            send_pushover "ERROR: Failed to send shutdown command to $DEVICE_NAME"
+            return 1
         fi
     else
-        log "ERROR: Failed to send shutdown command to $DEVICE_NAME"
-        send_pushover "ERROR: Failed to send ssh shutdown command to $DEVICE_NAME. Aborting next steps."
-        return 1
+        if ssh "$ssh_user@$target_ip" "sudo /sbin/shutdown -h now" 2>&1 | tee -a "$LOG_FILE"; then
+            log "INFO: Shutdown command sent successfully to $DEVICE_NAME"
+        else
+            log "ERROR: Failed to send shutdown command to $DEVICE_NAME"
+            send_pushover "ERROR: Failed to send shutdown command to $DEVICE_NAME"
+            return 1
+        fi
     fi
+    sleep 120 
+    if check_device_online "$target_ip" 6; then
+        log "ERROR: $DEVICE_NAME is still online after shutdown command"
+        send_pushover "ERROR: $DEVICE_NAME is still online after shutdown command"
+        return 1
+    else
+        log "INFO: $DEVICE_NAME has shutdown successfully"
+        return 0
+    fi
+   
 }
