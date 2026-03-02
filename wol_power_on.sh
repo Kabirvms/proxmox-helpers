@@ -23,7 +23,7 @@ fi
 
 # Send Wake-on-LAN
 log "INFO: Sending Wake-on-LAN to $DEVICE_NAME"
-wakeonlan "$DEVICE_MAC"
+wakeonlan "$WOL_MAC"
 
  if ! check_device_online 30; then
         log "WARNING: Device $DEVICE_NAME is offline after WOL command"
