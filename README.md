@@ -1,4 +1,5 @@
 # proxmox-helpers
+This project is not afficated with proxmox in any way
 This is a set of simple bash scripts to manage a 3-2-1 backup of proxmox to two external pbs servers. It has been setup to start and auto shutdown a server on the local network with Wake on LAN support. And a second that uses a Home Assistant connected switch to do the same (with safe shutdown). IT also intergrates with home assistant to easily control shutdown and backup permissions.
 
 The wake on LAN scripts are labeled wol and the Home Assistant Swich scripts are labeled sw
